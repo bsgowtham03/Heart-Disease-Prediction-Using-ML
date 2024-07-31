@@ -1,0 +1,75 @@
+import numpy as np
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression, LinearRegression
+from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
+
+# Load the dataset
+url = "https://archive.ics.uci.edu/ml/machine-learning-databases/heart-disease/processed.cleveland.data"
+column_names = ['age', 'sex', 'cp', 'trestbps', 'chol', 'fbs', 'restecg', 'thalach', 'exang', 'oldpeak', 'slope', 'ca', 'thal', 'target']
+df = pd.read_csv(url, header=None, names=column_names)
+
+# Data preprocessing
+df.replace('?', np.nan, inplace=True)
+df.dropna(inplace=True)
+df['ca'] = df['ca'].astype(float)
+df['thal'] = df['thal'].astype(float)
+
+# Feature and target variables
+X = df.drop('target', axis=1)
+y = df['target']
+
+# Binarize the target variable
+y = y.apply(lambda x: 1 if x > 0 else 0)
+
+# Split the data
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Standardize the features
+scaler = StandardScaler()
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
+
+# Initialize models
+models = {
+    "Logistic Regression": LogisticRegression(max_iter=1000),
+    "Linear Regression": LinearRegression(),
+    "Quadratic Discriminant Analysis": QuadraticDiscriminantAnalysis(),
+    "Decision Tree Classifier": DecisionTreeClassifier(),
+    "Random Forest Classifier": RandomForestClassifier()
+}
+
+# Train and evaluate models
+for name, model in models.items():
+    model.fit(X_train, y_train)
+    if name == "Linear Regression":
+        y_pred = model.predict(X_test)
+        y_pred = np.round(y_pred).astype(int)  # Round predictions for linear regression
+    else:
+        y_pred = model.predict(X_test)
+    
+    accuracy = accuracy_score(y_test, y_pred)
+    conf_matrix = confusion_matrix(y_test, y_pred)
+    class_report = classification_report(y_test, y_pred)
+    
+    print(f"Model: {name}")
+    print(f"Accuracy: {accuracy:.2f}")
+    print("Confusion Matrix:")
+    print(conf_matrix)
+    print("Classification Report:")
+    print(class_report)
+    print("\n" + "-"*50 + "\n")
+
+# Making predictions for 5 sample data points
+sample_data = X_test[:5]
+for name, model in models.items():
+    if name == "Linear Regression":
+        sample_predictions = model.predict(sample_data)
+        sample_predictions = np.round(sample_predictions).astype(int)
+    else:
+        sample_predictions = model.predict(sample_data)
+    print(f"Sample Predictions for {name} for 5 data points:", sample_predictions)
